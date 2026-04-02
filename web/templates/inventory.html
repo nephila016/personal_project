@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">Inventory Management</h4>
+
+<!-- Global Bottle Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ bottle_stats.total_received }}</div>
+                        <div class="stat-label">Total Received</div>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-arrow-down-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ bottle_stats.total_delivered }}</div>
+                        <div class="stat-label">Total Delivered</div>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ bottle_stats.total_returned }}</div>
+                        <div class="stat-label">Total Returned</div>
+                    </div>
+                    <div class="stat-icon bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-arrow-return-left"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ bottle_stats.admin_stock }}</div>
+                        <div class="stat-label">Admin Stock (Total)</div>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Recent Receipts -->
+    <div class="col-lg-6">
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-arrow-down-circle"></i> Recent Receipts
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dashboard table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Admin</th>
+                                <th>Quantity</th>
+                                <th>Notes</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in receipts %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('dashboard.admin_detail', admin_id=receipt.admin_id) }}">
+                                            {{ receipt.admin.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">+{{ receipt.quantity }}</span>
+                                    </td>
+                                    <td>{{ receipt.notes or '--' }}</td>
+                                    <td>{{ receipt.received_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No receipts recorded</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Returns -->
+    <div class="col-lg-6">
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-arrow-return-left"></i> Recent Returns
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dashboard table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Customer</th>
+                                <th>Admin</th>
+                                <th>Quantity</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ret in returns %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('dashboard.customer_detail', customer_id=ret.customer_id) }}">
+                                            {{ ret.customer.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('dashboard.admin_detail', admin_id=ret.admin_id) }}">
+                                            {{ ret.admin.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ ret.quantity }}</span>
+                                    </td>
+                                    <td>{{ ret.returned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No returns recorded</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

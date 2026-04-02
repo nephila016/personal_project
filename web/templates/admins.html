@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Admins{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Admins</h4>
+    <a href="{{ url_for('dashboard.admin_new') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg"></i> Add Admin
+    </a>
+</div>
+
+<!-- Admins Table -->
+<div class="card info-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Telegram ID</th>
+                        <th>Phone</th>
+                        <th>Stock</th>
+                        <th>Deliveries</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admins %}
+                        <tr>
+                            <td><strong>#{{ admin.id }}</strong></td>
+                            <td>{{ admin.full_name }}</td>
+                            <td>{{ admin.telegram_id }}</td>
+                            <td>{{ admin.phone or '--' }}</td>
+                            <td>{{ admin.stock }}</td>
+                            <td>{{ admin.total_delivered }}</td>
+                            <td>
+                                {% if admin.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('dashboard.admin_detail', admin_id=admin.id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">No admins found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h4 class="mb-4 fw-bold">Dashboard Overview</h4>
+
+<!-- Stats Cards Row -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4 col-xl-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ stats.total_orders }}</div>
+                        <div class="stat-label">Total Orders</div>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-cart3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ stats.pending_orders }}</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ stats.delivered_orders }}</div>
+                        <div class="stat-label">Delivered</div>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ stats.total_customers }}</div>
+                        <div class="stat-label">Active Customers</div>
+                    </div>
+                    <div class="stat-icon bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ stats.active_admins }}</div>
+                        <div class="stat-label">Active Admins</div>
+                    </div>
+                    <div class="stat-icon bg-secondary bg-opacity-10 text-secondary">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ stats.bottles.admin_stock }}</div>
+                        <div class="stat-label">Bottles in Stock</div>
+                    </div>
+                    <div class="stat-icon bg-dark bg-opacity-10 text-dark">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Orders by Status
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart"></i> Orders Per Day (Last 30 Days)
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card info-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-activity"></i> Recent Activity</span>
+        <a href="{{ url_for('dashboard.orders') }}" class="btn btn-sm btn-outline-primary">View All Orders</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Previous Status</th>
+                        <th>New Status</th>
+                        <th>Changed At</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_activity %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('dashboard.order_detail', order_id=log.order_id) }}">
+                                    #{{ log.order_id }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if log.old_status %}
+                                    <span class="badge badge-{{ log.old_status }}">{{ log.old_status | replace('_', ' ') | title }}</span>
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ log.new_status }}">{{ log.new_status | replace('_', ' ') | title }}</span>
+                            </td>
+                            <td>{{ log.changed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ log.note or '--' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">No recent activity</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Orders by Status - Doughnut Chart
+    const statusData = {{ orders_by_status | tojson }};
+    const statusLabels = Object.keys(statusData).map(s => s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()));
+    const statusValues = Object.values(statusData);
+    const statusColors = {
+        'pending': '#ffc107',
+        'in_progress': '#0dcaf0',
+        'delivered': '#198754',
+        'canceled': '#dc3545'
+    };
+    const bgColors = Object.keys(statusData).map(s => statusColors[s] || '#6c757d');
+
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: statusLabels,
+            datasets: [{
+                data: statusValues,
+                backgroundColor: bgColors,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Orders Per Day - Bar Chart
+    const dailyData = {{ orders_by_day | tojson }};
+    const dailyLabels = dailyData.map(d => d.date);
+    const dailyValues = dailyData.map(d => d.count);
+
+    new Chart(document.getElementById('dailyChart'), {
+        type: 'bar',
+        data: {
+            labels: dailyLabels,
+            datasets: [{
+                label: 'Orders',
+                data: dailyValues,
+                backgroundColor: 'rgba(13, 110, 253, 0.6)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        maxTicksLimit: 15
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

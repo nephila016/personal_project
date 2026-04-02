@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Order #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('dashboard.orders') }}" class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left"></i> Back to Orders
+        </a>
+        <h4 class="fw-bold mt-1 mb-0">
+            Order #{{ order.id }}
+            <span class="badge badge-{{ order.status }} ms-2">
+                {{ order.status | replace('_', ' ') | title }}
+            </span>
+        </h4>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Order Info -->
+    <div class="col-lg-8">
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> Order Details
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-6 mb-3">
+                        <div class="text-muted small">Order ID</div>
+                        <div class="fw-semibold">#{{ order.id }}</div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="text-muted small">Bottle Count</div>
+                        <div class="fw-semibold">{{ order.bottle_count }}</div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="text-muted small">Delivery Address</div>
+                        <div class="fw-semibold">{{ order.delivery_address }}</div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="text-muted small">Delivery Notes</div>
+                        <div class="fw-semibold">{{ order.delivery_notes or '--' }}</div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="text-muted small">Created At</div>
+                        <div class="fw-semibold">{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="text-muted small">Last Updated</div>
+                        <div class="fw-semibold">{{ order.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                    </div>
+                    {% if order.status == 'canceled' %}
+                        <div class="col-sm-6 mb-3">
+                            <div class="text-muted small">Canceled By</div>
+                            <div class="fw-semibold">{{ order.canceled_by | title if order.canceled_by else '--' }}</div>
+                        </div>
+                    {% endif %}
+                    {% if order.notes %}
+                        <div class="col-12 mb-3">
+                            <div class="text-muted small">Notes</div>
+                            <div class="fw-semibold">{{ order.notes }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Status History -->
+        <div class="card info-card mt-3">
+            <div class="card-header">
+                <i class="bi bi-clock-history"></i> Status History
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dashboard table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Previous Status</th>
+                                <th>New Status</th>
+                                <th>Changed At</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in order.status_logs %}
+                                <tr>
+                                    <td>
+                                        {% if log.old_status %}
+                                            <span class="badge badge-{{ log.old_status }}">
+                                                {{ log.old_status | replace('_', ' ') | title }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ log.new_status }}">
+                                            {{ log.new_status | replace('_', ' ') | title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.changed_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>{{ log.note or '--' }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No status history</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Info -->
+    <div class="col-lg-4">
+        <!-- Customer Info -->
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-person"></i> Customer
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <div class="text-muted small">Name</div>
+                    <div class="fw-semibold">
+                        <a href="{{ url_for('dashboard.customer_detail', customer_id=order.customer.id) }}">
+                            {{ order.customer.full_name }}
+                        </a>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="text-muted small">Phone</div>
+                    <div class="fw-semibold">{{ order.customer.phone }}</div>
+                </div>
+                <div class="mb-2">
+                    <div class="text-muted small">Address</div>
+                    <div class="fw-semibold">{{ order.customer.address }}</div>
+                </div>
+                <div>
+                    <div class="text-muted small">Status</div>
+                    <div>
+                        {% if order.customer.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Info -->
+        {% if order.admin %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="bi bi-person-badge"></i> Assigned Admin
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="text-muted small">Name</div>
+                        <div class="fw-semibold">
+                            <a href="{{ url_for('dashboard.admin_detail', admin_id=order.admin.id) }}">
+                                {{ order.admin.full_name }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="text-muted small">Phone</div>
+                        <div class="fw-semibold">{{ order.admin.phone or '--' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Status</div>
+                        <div>
+                            {% if order.admin.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Status Update Form -->
+        {% if order.status not in ('delivered', 'canceled') %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="bi bi-arrow-repeat"></i> Update Status
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('dashboard.order_update_status', order_id=order.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="mb-3">
+                            <label for="new_status" class="form-label">New Status</label>
+                            <select class="form-select" name="new_status" id="new_status" required>
+                                <option value="">Select status...</option>
+                                {% if order.status == 'pending' %}
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="canceled">Canceled</option>
+                                {% elif order.status == 'in_progress' %}
+                                    <option value="delivered">Delivered</option>
+                                    <option value="canceled">Canceled</option>
+                                {% endif %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Note (optional)</label>
+                            <textarea class="form-control" name="note" id="note" rows="2"
+                                      placeholder="Add a note..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-lg"></i> Update Status
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

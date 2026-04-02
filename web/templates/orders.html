@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Orders</h4>
+    <span class="text-muted">{{ total }} total orders</span>
+</div>
+
+<!-- Filter Form -->
+<div class="filter-form">
+    <form method="GET" action="{{ url_for('dashboard.orders') }}">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label for="status" class="form-label form-label-sm">Status</label>
+                <select class="form-select form-select-sm" name="status" id="status">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {{ 'selected' if filters.status == 'pending' }}>Pending</option>
+                    <option value="in_progress" {{ 'selected' if filters.status == 'in_progress' }}>In Progress</option>
+                    <option value="delivered" {{ 'selected' if filters.status == 'delivered' }}>Delivered</option>
+                    <option value="canceled" {{ 'selected' if filters.status == 'canceled' }}>Canceled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="search" class="form-label form-label-sm">Search</label>
+                <input type="text" class="form-control form-control-sm" name="search" id="search"
+                       placeholder="Customer name, address..."
+                       value="{{ filters.search or '' }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_from" class="form-label form-label-sm">From Date</label>
+                <input type="date" class="form-control form-control-sm" name="date_from" id="date_from"
+                       value="{{ filters.date_from or '' }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label form-label-sm">To Date</label>
+                <input type="date" class="form-control form-control-sm" name="date_to" id="date_to"
+                       value="{{ filters.date_to or '' }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+                <a href="{{ url_for('dashboard.orders') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg"></i> Clear
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Orders Table -->
+<div class="card info-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Customer</th>
+                        <th>Bottles</th>
+                        <th>Address</th>
+                        <th>Status</th>
+                        <th>Admin</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>{{ order.customer.full_name }}</td>
+                            <td>{{ order.bottle_count }}</td>
+                            <td class="text-truncate" style="max-width: 200px;" title="{{ order.delivery_address }}">
+                                {{ order.delivery_address }}
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ order.status }}">
+                                    {{ order.status | replace('_', ' ') | title }}
+                                </span>
+                            </td>
+                            <td>{{ order.admin.full_name if order.admin else '--' }}</td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <a href="{{ url_for('dashboard.order_detail', order_id=order.id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">No orders found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if pages > 1 %}
+    <nav aria-label="Orders pagination" class="mt-3">
+        <ul class="pagination justify-content-center mb-0">
+            <li class="page-item {{ 'disabled' if page <= 1 }}">
+                <a class="page-link"
+                   href="{{ url_for('dashboard.orders', page=page-1, status=filters.status, search=filters.search, date_from=filters.date_from, date_to=filters.date_to) }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% for p in range(1, pages + 1) %}
+                {% if p == page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ p }}</span>
+                    </li>
+                {% elif p == 1 or p == pages or (p >= page - 2 and p <= page + 2) %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{{ url_for('dashboard.orders', page=p, status=filters.status, search=filters.search, date_from=filters.date_from, date_to=filters.date_to) }}">
+                            {{ p }}
+                        </a>
+                    </li>
+                {% elif p == page - 3 or p == page + 3 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {{ 'disabled' if page >= pages }}">
+                <a class="page-link"
+                   href="{{ url_for('dashboard.orders', page=page+1, status=filters.status, search=filters.search, date_from=filters.date_from, date_to=filters.date_to) }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+{% endif %}
+{% endblock %}

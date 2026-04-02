@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Customers</h4>
+    <span class="text-muted">{{ total }} total customers</span>
+</div>
+
+<!-- Search -->
+<div class="filter-form">
+    <form method="GET" action="{{ url_for('dashboard.customers') }}">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label for="search" class="form-label form-label-sm">Search</label>
+                <input type="text" class="form-control form-control-sm" name="search" id="search"
+                       placeholder="Name, phone, address..."
+                       value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{{ url_for('dashboard.customers') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg"></i> Clear
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Customers Table -->
+<div class="card info-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dashboard table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Address</th>
+                        <th>Orders</th>
+                        <th>Bottles In Hand</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                        <tr>
+                            <td><strong>#{{ customer.id }}</strong></td>
+                            <td>{{ customer.full_name }}</td>
+                            <td>{{ customer.phone }}</td>
+                            <td class="text-truncate" style="max-width: 200px;" title="{{ customer.address }}">
+                                {{ customer.address }}
+                            </td>
+                            <td>{{ customer.total_orders }}</td>
+                            <td>{{ customer.bottles_in_hand }}</td>
+                            <td>
+                                {% if customer.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('dashboard.customer_detail', customer_id=customer.id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">No customers found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if pages > 1 %}
+    <nav aria-label="Customers pagination" class="mt-3">
+        <ul class="pagination justify-content-center mb-0">
+            <li class="page-item {{ 'disabled' if page <= 1 }}">
+                <a class="page-link"
+                   href="{{ url_for('dashboard.customers', page=page-1, search=request.args.get('search', '')) }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% for p in range(1, pages + 1) %}
+                {% if p == page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ p }}</span>
+                    </li>
+                {% elif p == 1 or p == pages or (p >= page - 2 and p <= page + 2) %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{{ url_for('dashboard.customers', page=p, search=request.args.get('search', '')) }}">
+                            {{ p }}
+                        </a>
+                    </li>
+                {% elif p == page - 3 or p == page + 3 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {{ 'disabled' if page >= pages }}">
+                <a class="page-link"
+                   href="{{ url_for('dashboard.customers', page=page+1, search=request.args.get('search', '')) }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+{% endif %}
+{% endblock %}

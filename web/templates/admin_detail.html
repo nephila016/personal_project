@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Admin: {{ admin.full_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('dashboard.admins') }}" class="text-decoration-none text-muted">
+        <i class="bi bi-arrow-left"></i> Back to Admins
+    </a>
+    <h4 class="fw-bold mt-1 mb-0">{{ admin.full_name }}</h4>
+</div>
+
+<div class="row g-3">
+    <!-- Profile Info -->
+    <div class="col-lg-4">
+        <div class="card info-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-badge"></i> Profile</span>
+                {% if admin.is_active %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-danger">Inactive</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="text-muted small">Full Name</div>
+                    <div class="fw-semibold">{{ admin.full_name }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small">Telegram ID</div>
+                    <div class="fw-semibold">{{ admin.telegram_id }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small">Telegram Username</div>
+                    <div class="fw-semibold">{{ admin.telegram_username or '--' }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small">Phone</div>
+                    <div class="fw-semibold">{{ admin.phone or '--' }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small">Registered</div>
+                    <div class="fw-semibold">{{ admin.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+
+                <hr>
+
+                <form method="POST" action="{{ url_for('dashboard.admin_toggle_active', admin_id=admin.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% if admin.is_active %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-x-circle"></i> Deactivate Admin
+                        </button>
+                    {% else %}
+                        <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                            <i class="bi bi-check-circle"></i> Activate Admin
+                        </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <!-- Inventory Stats -->
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-box-seam"></i> Inventory / Stock
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-sm-3 mb-3 mb-sm-0">
+                        <div class="fs-3 fw-bold text-primary">{{ inventory.total_received }}</div>
+                        <div class="text-muted small">Total Received</div>
+                    </div>
+                    <div class="col-sm-3 mb-3 mb-sm-0">
+                        <div class="fs-3 fw-bold text-success">{{ inventory.total_delivered }}</div>
+                        <div class="text-muted small">Total Delivered</div>
+                    </div>
+                    <div class="col-sm-3 mb-3 mb-sm-0">
+                        <div class="fs-3 fw-bold text-info">{{ inventory.total_returned }}</div>
+                        <div class="text-muted small">Returns Collected</div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="fs-3 fw-bold text-warning">{{ inventory.current_stock }}</div>
+                        <div class="text-muted small">Current Stock</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Deliveries -->
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="bi bi-truck"></i> Recent Deliveries
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dashboard table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Bottles</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                                <tr>
+                                    <td><strong>#{{ order.id }}</strong></td>
+                                    <td>{{ order.customer.full_name }}</td>
+                                    <td>{{ order.bottle_count }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ order.status }}">
+                                            {{ order.status | replace('_', ' ') | title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('dashboard.order_detail', order_id=order.id) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">No deliveries yet</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

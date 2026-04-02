@@ -1,0 +1,12 @@
+python-telegram-bot>=20.0
+flask>=3.0
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+flask-login>=0.6
+flask-wtf>=1.2
+flask-migrate>=4.0
+flask-limiter>=3.0
+flask-cors>=4.0
+werkzeug>=3.0
+gunicorn>=21.0
