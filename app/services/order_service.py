@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, update
@@ -7,6 +8,8 @@ from app.models.order import CanceledBy, Order, OrderStatus
 from app.models.order_status_log import OrderStatusLog
 from app.services import bottle_service
 from config import Config
+
+logger = logging.getLogger("orders")
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [OrderStatus.IN_PROGRESS, OrderStatus.CANCELED],
@@ -86,6 +89,8 @@ def create_order(
     )
     session.add(log)
     session.flush()
+    logger.info("ORDER_CREATED | order_id=%d | customer_id=%d | bottles=%d | address=%s",
+                order.id, customer_id, bottle_count, delivery_address.strip())
     return order
 
 
@@ -120,6 +125,7 @@ def claim_order(
         )
     )
     session.flush()
+    logger.info("ORDER_CLAIMED | order_id=%d | admin_id=%d", order_id, admin_id)
 
     return session.get(Order, order_id)
 
@@ -166,6 +172,8 @@ def mark_delivered(
         )
     )
     session.flush()
+    logger.info("ORDER_DELIVERED | order_id=%d | admin_id=%d | bottles=%d",
+                order_id, admin_id, order.bottle_count)
     return session.get(Order, order_id)
 
 
@@ -224,6 +232,8 @@ def cancel_order(
         )
     )
     session.flush()
+    logger.info("ORDER_CANCELED | order_id=%d | canceled_by=%s | reason=%s",
+                order_id, canceled_by, reason or "N/A")
     return session.get(Order, order_id)
 
 

@@ -1,8 +1,12 @@
+import logging
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.bottle_receipt import BottleReceipt
 from app.models.bottle_return import BottleReturn
+
+logger = logging.getLogger("bottles")
 from app.models.order import Order, OrderStatus
 
 
@@ -116,6 +120,8 @@ def record_receipt(
     )
     session.add(receipt)
     session.flush()
+    logger.info("BOTTLE_RECEIPT | receipt_id=%d | admin_id=%d | qty=%d | notes=%s",
+                receipt.id, admin_id, quantity, notes or "N/A")
     return receipt
 
 
@@ -144,6 +150,8 @@ def record_return(
     )
     session.add(bottle_return)
     session.flush()
+    logger.info("BOTTLE_RETURN | return_id=%d | customer_id=%d | admin_id=%d | qty=%d",
+                bottle_return.id, customer_id, admin_id, quantity)
     return bottle_return
 
 

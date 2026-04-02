@@ -101,11 +101,6 @@ async def _handle_notification_claim(update, context):
 
 
 def run():
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        level=logging.INFO,
-    )
-
     os.makedirs("bot_persistence", exist_ok=True)
 
     app = create_application()
