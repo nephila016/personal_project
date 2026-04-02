@@ -6,31 +6,9 @@ from telegram.ext import CommandHandler, ContextTypes
 from app.database import get_session
 from app.models.admin import Admin
 from app.models.customer import Customer
+from bot.utils.i18n import get_lang, t
 
 logger = logging.getLogger(__name__)
-
-CUSTOMER_COMMANDS = (
-    "Customer Commands\n"
-    "-----------------------------\n"
-    "/start - Register or welcome\n"
-    "/order - Place a new order\n"
-    "/reorder - Repeat your last order\n"
-    "/myorders - View your order history\n"
-    "/cancel - Cancel a pending order\n"
-    "/profile - View/edit your profile\n"
-    "/help - Show this help message\n"
-)
-
-ADMIN_COMMANDS = (
-    "Admin Commands\n"
-    "-----------------------------\n"
-    "/pending - View pending orders\n"
-    "/active - View your active orders\n"
-    "/receive - Record bottle receipt\n"
-    "/returns - Record bottle returns\n"
-    "/inventory - View your inventory\n"
-    "/help - Show this help message\n"
-)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -39,8 +17,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not user:
         return
 
-    is_customer = False
-    is_admin = False
+    lang = get_lang(context)
 
     with get_session() as session:
         customer = (
@@ -57,16 +34,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         is_admin = admin is not None
 
     if is_customer and is_admin:
-        text = f"{CUSTOMER_COMMANDS}\n{ADMIN_COMMANDS}"
+        text = t("help_customer", lang) + "\n\n" + t("help_admin", lang)
     elif is_admin:
-        text = ADMIN_COMMANDS
+        text = t("help_admin", lang)
     elif is_customer:
-        text = CUSTOMER_COMMANDS
+        text = t("help_customer", lang)
     else:
-        text = (
-            "You are not registered yet.\n"
-            "Use /start to register as a customer."
-        )
+        text = t("help_not_registered", lang)
 
     await update.message.reply_text(text)
 

@@ -14,6 +14,7 @@ from app.database import get_session
 from app.services import order_service
 from bot.keyboards.customer_kb import confirm_reorder_keyboard
 from bot.middlewares.auth import require_customer
+from bot.utils.i18n import get_lang, t
 from bot.utils.notifications import notify_admins_new_order
 from bot.utils.validators import validate_bottle_count
 from config import Config
@@ -27,36 +28,33 @@ CONFIRM_REORDER, CHANGE_AMOUNT = range(2)
 @require_customer
 async def reorder_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Entry point for /reorder. Fetch last delivered order and offer to repeat it."""
+    lang = get_lang(context)
     customer_id = context.user_data["customer_id"]
 
     with get_session() as session:
         last_order = order_service.get_customer_last_delivered(session, customer_id)
 
         if not last_order:
-            await update.message.reply_text(
-                "You don't have any previous delivered orders to reorder.\n"
-                "Use /order to place a new order."
-            )
+            await update.message.reply_text(t("no_previous_orders", lang))
             return ConversationHandler.END
 
-        context.user_data["reorder_bottles"] = last_order.bottle_count
-        context.user_data["reorder_address"] = last_order.delivery_address
+        # Extract values inside session
+        bottles = last_order.bottle_count
+        address = last_order.delivery_address
 
-    bottles = context.user_data["reorder_bottles"]
-    address = context.user_data["reorder_address"]
+    context.user_data["reorder_bottles"] = bottles
+    context.user_data["reorder_address"] = address
 
     await update.message.reply_text(
-        "Reorder from your last delivery:\n\n"
-        f"Bottles: {bottles}\n"
-        f"Address: {address}\n\n"
-        "Would you like to confirm or change the amount?",
-        reply_markup=confirm_reorder_keyboard(),
+        t("reorder_confirm", lang, bottles=bottles, address=address),
+        reply_markup=confirm_reorder_keyboard(lang),
     )
     return CONFIRM_REORDER
 
 
 async def confirm_reorder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle reorder confirmation."""
+    lang = get_lang(context)
     query = update.callback_query
     await query.answer()
 
@@ -78,22 +76,32 @@ async def confirm_reorder(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 bottle_count=bottles,
                 delivery_address=address,
             )
+
+            # Extract all needed values inside the session
             order_id = order.id
 
-            # Re-fetch with relationships for notification
+            # Re-fetch with relationships for notification dict
             from app.models.order import Order
             order = session.get(Order, order_id)
+            order_data = {
+                "id": order.id,
+                "customer_name": order.customer.full_name,
+                "customer_phone": order.customer.phone,
+                "bottle_count": order.bottle_count,
+                "delivery_address": order.delivery_address,
+                "delivery_notes": order.delivery_notes,
+                "version": order.version,
+            }
 
-            await query.edit_message_text(
-                f"Order #{order_id} placed successfully!\n"
-                f"{bottles} bottle(s) to {address}\n\n"
-                "You will be notified when an admin picks up your order."
-            )
+        await query.edit_message_text(
+            t("order_placed", lang, id=order_id, bottles=bottles, address=address)
+        )
 
-            await notify_admins_new_order(context.bot, order)
+        # Notify admins (outside session, using plain dict)
+        await notify_admins_new_order(context.bot, order_data)
 
     except ValueError as e:
-        await query.edit_message_text(f"Could not create order: {e}")
+        await query.edit_message_text(t("order_error", lang, error=str(e)))
 
     _cleanup_reorder_data(context)
     return ConversationHandler.END
@@ -101,21 +109,23 @@ async def confirm_reorder(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def change_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle Change Amount button -- prompt for new bottle count."""
+    lang = get_lang(context)
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        f"Enter the number of bottles (1-{Config.MAX_BOTTLES_PER_ORDER}):"
+        t("enter_bottle_count", lang, max=Config.MAX_BOTTLES_PER_ORDER)
     )
     return CHANGE_AMOUNT
 
 
 async def change_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Receive new bottle count for reorder."""
+    lang = get_lang(context)
     count = validate_bottle_count(update.message.text, Config.MAX_BOTTLES_PER_ORDER)
 
     if count is None:
         await update.message.reply_text(
-            f"Invalid number. Please enter a number between 1 and {Config.MAX_BOTTLES_PER_ORDER}:"
+            t("invalid_bottle_count", lang, max=Config.MAX_BOTTLES_PER_ORDER)
         )
         return CHANGE_AMOUNT
 
@@ -123,28 +133,27 @@ async def change_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE
     address = context.user_data["reorder_address"]
 
     await update.message.reply_text(
-        "Updated reorder:\n\n"
-        f"Bottles: {count}\n"
-        f"Address: {address}\n\n"
-        "Confirm or change again?",
-        reply_markup=confirm_reorder_keyboard(),
+        t("reorder_updated", lang, count=count, address=address),
+        reply_markup=confirm_reorder_keyboard(lang),
     )
     return CONFIRM_REORDER
 
 
 async def cancel_reorder_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the Cancel button on the reorder keyboard."""
+    lang = get_lang(context)
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text("Reorder cancelled.")
+    await query.edit_message_text(t("reorder_cancelled", lang))
     _cleanup_reorder_data(context)
     return ConversationHandler.END
 
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle /cancel during reorder conversation."""
+    lang = get_lang(context)
     _cleanup_reorder_data(context)
-    await update.message.reply_text("Reorder cancelled.")
+    await update.message.reply_text(t("reorder_cancelled", lang))
     return ConversationHandler.END
 
 
@@ -168,6 +177,7 @@ reorder_conversation = ConversationHandler(
     },
     fallbacks=[CommandHandler("cancel", cancel_command)],
     per_message=False,
+    allow_reentry=True,
     conversation_timeout=600,
 )
 

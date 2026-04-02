@@ -191,7 +191,7 @@
                     <i class="bi bi-arrow-repeat"></i> Update Status
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('dashboard.order_update_status', order_id=order.id) }}">
+                    <form method="POST" action="{{ url_for('dashboard.update_order_status', order_id=order.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                         <div class="mb-3">

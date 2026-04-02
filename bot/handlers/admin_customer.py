@@ -16,12 +16,24 @@ from telegram.ext import (
 from app.database import get_session
 from app.services import bottle_service, customer_service, order_service
 from bot.middlewares.auth import require_admin
-from bot.utils.formatters import format_bottle_stats, format_date, format_order_short
+from bot.utils.i18n import (
+    format_bottle_stats_i18n,
+    format_order_short_i18n,
+    get_lang,
+    get_status_label,
+    t,
+)
 
 logger = logging.getLogger(__name__)
 
 # Conversation states
 ENTER_SEARCH, SELECT_CUSTOMER = range(2)
+
+
+def _format_date(dt, lang: str) -> str:
+    if not dt:
+        return t("na", lang)
+    return dt.strftime("%d.%m.%Y %H:%M")
 
 
 # ---------------------------------------------------------------------------
@@ -31,8 +43,9 @@ ENTER_SEARCH, SELECT_CUSTOMER = range(2)
 @require_admin
 async def customer_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """/customer - start a customer-lookup flow."""
+    lang = get_lang(context)
     await update.message.reply_text(
-        "Enter a customer name or phone number to search:"
+        t("enter_name_or_phone", lang)
     )
     return ENTER_SEARCH
 
@@ -44,38 +57,43 @@ async def customer_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @require_admin
 async def enter_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Search customers by the text the admin entered."""
+    lang = get_lang(context)
     query_text = update.message.text.strip()
     if not query_text:
-        await update.message.reply_text("Please enter a name or phone number.")
+        await update.message.reply_text(t("enter_name_or_phone_short", lang))
         return ENTER_SEARCH
 
     with get_session() as session:
         results = customer_service.search_customers(session, query_text, limit=10)
 
-    if not results:
-        await update.message.reply_text(
-            "No customers found. Try a different search or /cancel."
-        )
-        return ENTER_SEARCH
+        if not results:
+            await update.message.reply_text(
+                t("customers_not_found", lang)
+            )
+            return ENTER_SEARCH
+
+        if len(results) == 1:
+            customer_id = results[0].id
+            # fall through to show detail within this session scope
+        else:
+            # Multiple matches -- build keyboard from extracted data.
+            buttons = []
+            for cust in results:
+                buttons.append(
+                    [
+                        InlineKeyboardButton(
+                            f"{cust.full_name} ({cust.phone})",
+                            callback_data=f"custview_{cust.id}",
+                        )
+                    ]
+                )
 
     if len(results) == 1:
-        # Only one match -- show detail directly.
-        return await _show_customer_detail(update, context, results[0].id)
+        return await _show_customer_detail(update, context, customer_id)
 
-    # Multiple matches -- show selection keyboard.
-    buttons = []
-    for cust in results:
-        buttons.append(
-            [
-                InlineKeyboardButton(
-                    f"{cust.full_name} ({cust.phone})",
-                    callback_data=f"custview_{cust.id}",
-                )
-            ]
-        )
     keyboard = InlineKeyboardMarkup(buttons)
     await update.message.reply_text(
-        f"Found {len(results)} customers. Select one:",
+        t("found_n_customers", lang, count=len(results)),
         reply_markup=keyboard,
     )
     return SELECT_CUSTOMER
@@ -112,10 +130,12 @@ async def _show_customer_detail(
     edit: bool = False,
 ):
     """Fetch and display full customer profile."""
+    lang = get_lang(context)
+
     with get_session() as session:
         customer = customer_service.get_by_id(session, customer_id)
         if not customer:
-            text = "Customer not found."
+            text = t("customer_not_found_short", lang)
             if edit and update.callback_query:
                 await update.callback_query.edit_message_text(text)
             else:
@@ -127,31 +147,50 @@ async def _show_customer_detail(
             session, customer_id, limit=5
         )
 
-        # Build text.
-        lines = [
-            "Customer Profile",
-            "-----------------------------",
-            f"Name:     {customer.full_name}",
-            f"Phone:    {customer.phone}",
-            f"Address:  {customer.address}",
-            f"Active:   {'Yes' if customer.is_active else 'No'}",
-            f"Joined:   {format_date(customer.created_at)}",
-            "",
-            "Bottle Statistics",
-            "-----------------------------",
-            format_bottle_stats(stats),
-            "",
-            f"Recent Orders ({total_orders} total)",
-            "-----------------------------",
-        ]
+        # Extract all needed values inside the session.
+        cust_name = customer.full_name
+        cust_phone = customer.phone
+        cust_address = customer.address
+        cust_active = customer.is_active
+        cust_created = customer.created_at
 
-        if orders:
-            for order in orders:
-                lines.append(format_order_short(order))
-        else:
-            lines.append("No orders yet.")
+        order_data_list = []
+        for o in orders:
+            order_data_list.append({
+                "id": o.id,
+                "bottle_count": o.bottle_count,
+                "status": o.status,
+                "created_at": o.created_at,
+            })
 
-        text = "\n".join(lines)
+    # Build text outside session -- only plain values used.
+    active_label = t("yes", lang) if cust_active else t("no", lang)
+    separator = t("stock_separator", lang)
+
+    lines = [
+        t("customer_profile_header", lang),
+        separator,
+        t("customer_detail_name", lang, name=cust_name),
+        t("customer_detail_phone", lang, phone=cust_phone),
+        t("customer_detail_address", lang, address=cust_address),
+        t("customer_detail_active", lang, value=active_label),
+        t("customer_detail_registered", lang, date=_format_date(cust_created, lang)),
+        "",
+        t("bottle_stats_header", lang),
+        separator,
+        format_bottle_stats_i18n(stats, lang),
+        "",
+        t("recent_orders_header", lang, total=total_orders),
+        separator,
+    ]
+
+    if order_data_list:
+        for od in order_data_list:
+            lines.append(format_order_short_i18n(od, lang))
+    else:
+        lines.append(t("no_orders_yet_short", lang))
+
+    text = "\n".join(lines)
 
     if edit and update.callback_query:
         await update.callback_query.edit_message_text(text)
@@ -167,7 +206,8 @@ async def _show_customer_detail(
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """/cancel fallback."""
-    await update.message.reply_text("Customer search canceled.")
+    lang = get_lang(context)
+    await update.message.reply_text(t("customer_search_cancelled", lang))
     return ConversationHandler.END
 
 
@@ -196,5 +236,6 @@ def get_handlers():
         ],
         conversation_timeout=600,
         per_message=False,
+    allow_reentry=True,
     )
     return [conv]

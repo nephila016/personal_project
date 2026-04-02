@@ -16,6 +16,7 @@ from app.database import get_session
 from app.services import bottle_service
 from bot.keyboards.admin_kb import confirm_receipt_keyboard, skip_keyboard
 from bot.middlewares.auth import require_admin
+from bot.utils.i18n import get_lang, t
 from bot.utils.validators import validate_receipt_quantity
 from config import Config
 
@@ -32,9 +33,9 @@ ENTER_QTY, ENTER_NOTES, CONFIRM = range(3)
 @require_admin
 async def receive_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """/receive - start the bottle-receipt flow."""
+    lang = get_lang(context)
     await update.message.reply_text(
-        "How many bottles did you receive from the supplier?\n"
-        f"(1 - {Config.MAX_RECEIPT_QUANTITY})"
+        t("how_many_received_full", lang, max=Config.MAX_RECEIPT_QUANTITY)
     )
     return ENTER_QTY
 
@@ -46,20 +47,20 @@ async def receive_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @require_admin
 async def enter_quantity(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Validate and store the receipt quantity."""
+    lang = get_lang(context)
     qty = validate_receipt_quantity(
         update.message.text, max_qty=Config.MAX_RECEIPT_QUANTITY
     )
     if qty is None:
         await update.message.reply_text(
-            f"Please enter a valid number between 1 and {Config.MAX_RECEIPT_QUANTITY}."
+            t("enter_valid_quantity", lang, max=Config.MAX_RECEIPT_QUANTITY)
         )
         return ENTER_QTY
 
     context.user_data["receipt_qty"] = qty
     await update.message.reply_text(
-        "Add any notes for this receipt? (e.g. supplier name, invoice #)\n"
-        "Type your note or press Skip.",
-        reply_markup=skip_keyboard(callback_data="receipt_skip_notes"),
+        t("add_receipt_note_prompt", lang),
+        reply_markup=skip_keyboard(callback_data="receipt_skip_notes", lang=lang),
     )
     return ENTER_NOTES
 
@@ -90,18 +91,15 @@ async def _show_confirmation(
     *,
     edit: bool = False,
 ):
+    lang = get_lang(context)
     qty = context.user_data.get("receipt_qty")
     notes = context.user_data.get("receipt_notes")
 
-    lines = [
-        "Please confirm the receipt:",
-        f"  Quantity: {qty} bottles",
-    ]
+    text = t("confirm_receipt_text", lang, qty=qty)
     if notes:
-        lines.append(f"  Notes: {notes}")
+        text += "\n" + t("confirm_receipt_notes_line", lang, notes=notes)
 
-    text = "\n".join(lines)
-    keyboard = confirm_receipt_keyboard()
+    keyboard = confirm_receipt_keyboard(lang=lang)
 
     if edit and update.callback_query:
         await update.callback_query.edit_message_text(
@@ -124,12 +122,15 @@ async def confirm_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    lang = get_lang(context)
     qty = context.user_data.get("receipt_qty")
     notes = context.user_data.get("receipt_notes")
     admin_id = context.user_data["admin_id"]
 
     if not qty:
-        await query.edit_message_text("Something went wrong. Please try /receive again.")
+        await query.edit_message_text(
+            t("receipt_error", lang)
+        )
         _clear_receipt_data(context)
         return ConversationHandler.END
 
@@ -137,12 +138,11 @@ async def confirm_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
         receipt = bottle_service.record_receipt(
             session, admin_id=admin_id, quantity=qty, notes=notes
         )
+        receipt_id = receipt.id
         stock = bottle_service.get_admin_stock(session, admin_id)
 
     await query.edit_message_text(
-        f"Receipt recorded (ID #{receipt.id}).\n"
-        f"  {qty} bottles added.\n"
-        f"  Current stock: {stock} bottles."
+        t("receipt_recorded_full", lang, id=receipt_id, qty=qty, stock=stock)
     )
 
     _clear_receipt_data(context)
@@ -154,7 +154,8 @@ async def cancel_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cancel button on confirmation step."""
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text("Receipt canceled.")
+    lang = get_lang(context)
+    await query.edit_message_text(t("receipt_cancelled_admin", lang))
     _clear_receipt_data(context)
     return ConversationHandler.END
 
@@ -165,8 +166,9 @@ async def cancel_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """/cancel fallback."""
+    lang = get_lang(context)
     _clear_receipt_data(context)
-    await update.message.reply_text("Receipt flow canceled.")
+    await update.message.reply_text(t("receipt_cancelled_admin", lang))
     return ConversationHandler.END
 
 
@@ -205,5 +207,6 @@ def get_handlers():
         ],
         conversation_timeout=600,
         per_message=False,
+    allow_reentry=True,
     )
     return [conv]

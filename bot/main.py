@@ -19,13 +19,14 @@ logger = logging.getLogger(__name__)
 async def post_init(application: Application):
     """Set bot commands after startup."""
     customer_commands = [
-        BotCommand("start", "Register or see welcome message"),
-        BotCommand("order", "Order water bottles"),
-        BotCommand("reorder", "Repeat your last order"),
-        BotCommand("myorders", "View your order history"),
-        BotCommand("cancel", "Cancel a pending order"),
-        BotCommand("profile", "View or edit your profile"),
-        BotCommand("help", "Show available commands"),
+        BotCommand("start", "Регистрация / Ro'yxatdan o'tish"),
+        BotCommand("order", "Заказать воду / Suv buyurtma"),
+        BotCommand("reorder", "Повторить заказ / Takrorlash"),
+        BotCommand("myorders", "Мои заказы / Buyurtmalarim"),
+        BotCommand("cancel", "Отменить / Bekor qilish"),
+        BotCommand("profile", "Профиль / Profil"),
+        BotCommand("lang", "Язык / Til"),
+        BotCommand("help", "Помощь / Yordam"),
     ]
     await application.bot.set_my_commands(customer_commands)
     logger.info("Bot commands registered.")
@@ -49,6 +50,7 @@ def create_application() -> Application:
     from bot.handlers.cancel import get_handlers as cancel_handlers
     from bot.handlers.profile import get_handlers as profile_handlers
     from bot.handlers.help import get_handlers as help_handlers
+    from bot.handlers.lang import get_handlers as lang_handlers
     from bot.handlers.error import error_handler
 
     from bot.handlers.admin_pending import get_handlers as admin_pending_handlers
@@ -66,6 +68,7 @@ def create_application() -> Application:
         cancel_handlers,
         profile_handlers,
         help_handlers,
+        lang_handlers,
         admin_pending_handlers,
         admin_active_handlers,
         admin_receive_handlers,

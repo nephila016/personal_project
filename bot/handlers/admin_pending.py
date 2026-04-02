@@ -11,7 +11,7 @@ from app.database import get_session
 from app.services import order_service
 from bot.keyboards.admin_kb import pending_orders_keyboard
 from bot.middlewares.auth import require_admin
-from bot.utils.formatters import format_order_for_admin, format_order_for_admin_detail
+from bot.utils.i18n import get_lang, t
 from bot.utils.notifications import notify_customer
 
 logger = logging.getLogger(__name__)
@@ -19,15 +19,59 @@ logger = logging.getLogger(__name__)
 PAGE_SIZE = 5
 
 
-def _build_pending_text(orders, page: int, total: int) -> str:
+def _extract_order_list(orders) -> list[dict]:
+    """Extract plain dicts from ORM Order objects while the session is open."""
+    result = []
+    for o in orders:
+        customer = o.customer
+        d = {
+            "id": o.id,
+            "version": o.version,
+            "bottle_count": o.bottle_count,
+            "delivery_address": o.delivery_address,
+            "delivery_notes": o.delivery_notes,
+            "customer_name": customer.full_name if customer else "?",
+        }
+        result.append(d)
+    return result
+
+
+def _extract_order_detail(order) -> dict:
+    """Extract a detailed dict from an ORM Order while the session is open."""
+    customer = order.customer
+    return {
+        "id": order.id,
+        "version": order.version,
+        "customer_id": order.customer_id,
+        "bottle_count": order.bottle_count,
+        "delivery_address": order.delivery_address,
+        "delivery_notes": order.delivery_notes,
+        "customer_name": customer.full_name if customer else "?",
+        "customer_phone": customer.phone if customer else "?",
+    }
+
+
+def _format_order_line(d: dict, lang: str) -> str:
+    """Format a single order dict for the list view."""
+    lines = [
+        t("order_line", lang, id=d["id"], name=d["customer_name"],
+          bottles=d["bottle_count"], address=d["delivery_address"]),
+    ]
+    if d.get("delivery_notes"):
+        lines.append(t("order_line_notes", lang, notes=d["delivery_notes"]))
+    return "\n".join(lines)
+
+
+def _build_pending_text(order_dicts: list[dict], page: int, total: int, lang: str) -> str:
     """Build the text body for the pending-orders list."""
     total_pages = max(1, math.ceil(total / PAGE_SIZE))
-    if not orders:
-        return "No pending orders right now."
+    if not order_dicts:
+        return t("no_pending_orders", lang)
 
-    lines = [f"Pending Orders (page {page}/{total_pages}, {total} total)\n"]
-    for order in orders:
-        lines.append(format_order_for_admin(order))
+    lines = [t("pending_orders_page_header", lang, page=page,
+               total_pages=total_pages, total=total)]
+    for d in order_dicts:
+        lines.append(_format_order_line(d, lang))
         lines.append("")
     return "\n".join(lines)
 
@@ -40,6 +84,7 @@ async def _send_pending_page(
     edit: bool = False,
 ):
     """Fetch page *page* of pending orders and send / edit message."""
+    lang = get_lang(context)
     offset = (page - 1) * PAGE_SIZE
 
     with get_session() as session:
@@ -47,8 +92,11 @@ async def _send_pending_page(
             session, limit=PAGE_SIZE, offset=offset
         )
         total_pages = max(1, math.ceil(total / PAGE_SIZE))
-        text = _build_pending_text(orders, page, total)
-        keyboard = pending_orders_keyboard(orders, page=page, total_pages=total_pages)
+        order_dicts = _extract_order_list(orders)
+
+    text = _build_pending_text(order_dicts, page, total, lang)
+    keyboard = pending_orders_keyboard(order_dicts, page=page,
+                                       total_pages=total_pages, lang=lang)
 
     if edit and update.callback_query:
         await update.callback_query.edit_message_text(
@@ -83,6 +131,8 @@ async def claim_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    lang = get_lang(context)
+
     match = re.match(r"^claim_(\d+)_(\d+)$", query.data)
     if not match:
         return
@@ -97,26 +147,25 @@ async def claim_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         if order is None:
-            # Optimistic-lock conflict: order was already claimed or changed.
             await query.edit_message_text(
-                text=f"Order #{order_id} was already claimed or is no longer pending."
+                text=t("already_claimed", lang, id=order_id)
             )
-            # Send a refreshed list as a new message so the admin can continue.
             await _send_pending_page(update, context, page=1)
             return
 
-        # Success -- show the admin the full order detail.
-        detail = format_order_for_admin_detail(order)
-        text = f"You claimed this order.\n\n{detail}"
-        await query.edit_message_text(text=text)
+        detail = _extract_order_detail(order)
 
-        # Notify the customer.
-        customer_id = order.customer_id
-        customer_text = (
-            f"Your order #{order.id} has been picked up by a driver "
-            f"and is on its way!"
-        )
+    text = t("claimed_order_full", lang, id=order_id,
+             name=detail["customer_name"], phone=detail["customer_phone"],
+             address=detail["delivery_address"], bottles=detail["bottle_count"])
+    if detail.get("delivery_notes"):
+        text += t("claimed_notes", lang, notes=detail["delivery_notes"])
+    await query.edit_message_text(text=text)
 
+    # Notify customer in default lang ("ru") since we don't store lang in DB
+    customer_lang = "ru"
+    customer_id = detail["customer_id"]
+    customer_text = t("notif_order_accepted", customer_lang, id=order_id)
     await notify_customer(context.bot, customer_id, customer_text)
 
 

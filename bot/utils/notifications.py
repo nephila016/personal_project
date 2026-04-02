@@ -16,40 +16,49 @@ async def notify_customer(bot: Bot, customer_id: int, text: str):
         customer = session.get(Customer, customer_id)
         if not customer:
             return
+        telegram_id = customer.telegram_id
+        was_blocked = customer.notification_blocked
 
-        try:
-            await bot.send_message(chat_id=customer.telegram_id, text=text)
-            if customer.notification_blocked:
-                customer.notification_blocked = False
-                session.commit()
-        except Forbidden:
-            logger.warning(
-                f"Customer {customer_id} has blocked the bot."
-            )
-            customer.notification_blocked = True
-            session.commit()
-        except TelegramError as e:
-            logger.error(f"Failed to notify customer {customer_id}: {e}")
+    try:
+        await bot.send_message(chat_id=telegram_id, text=text)
+        if was_blocked:
+            with get_session() as session:
+                c = session.get(Customer, customer_id)
+                if c:
+                    c.notification_blocked = False
+    except Forbidden:
+        logger.warning(f"Customer {customer_id} has blocked the bot.")
+        with get_session() as session:
+            c = session.get(Customer, customer_id)
+            if c:
+                c.notification_blocked = True
+    except TelegramError as e:
+        logger.error(f"Failed to notify customer {customer_id}: {e}")
 
 
-async def notify_admins_new_order(bot: Bot, order):
-    """Notify admin group or individual admins about a new order."""
+async def notify_admins_new_order(bot: Bot, order_data: dict):
+    """Notify admin group or individual admins about a new order.
+
+    order_data should be a plain dict with keys:
+        id, customer_name, customer_phone, bottle_count,
+        delivery_address, delivery_notes, version
+    """
     text = (
-        f"New Order #{order.id}\n"
-        f"Customer: {order.customer.full_name}\n"
-        f"Bottles: {order.bottle_count}\n"
-        f"Address: {order.delivery_address}"
+        f"Новый заказ #{order_data['id']}\n"
+        f"Клиент: {order_data['customer_name']}\n"
+        f"Бутылки: {order_data['bottle_count']}\n"
+        f"Адрес: {order_data['delivery_address']}"
     )
-    if order.delivery_notes:
-        text += f"\nNotes: {order.delivery_notes}"
-    text += f"\nPhone: {order.customer.phone}"
+    if order_data.get("delivery_notes"):
+        text += f"\nПримечание: {order_data['delivery_notes']}"
+    text += f"\nТелефон: {order_data['customer_phone']}"
 
     keyboard = InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton(
-                    f"Claim #{order.id}",
-                    callback_data=f"claim_{order.id}_{order.version}",
+                    f"Взять #{order_data['id']}",
+                    callback_data=f"claim_{order_data['id']}_{order_data['version']}",
                 )
             ]
         ]
@@ -68,20 +77,18 @@ async def notify_admins_new_order(bot: Bot, order):
         from app.models.admin import Admin
 
         with get_session() as session:
-            admins = (
-                session.query(Admin).filter(Admin.is_active == True).all()
-            )
-            for admin in admins:
-                try:
-                    await bot.send_message(
-                        chat_id=admin.telegram_id,
-                        text=text,
-                        reply_markup=keyboard,
-                    )
-                except TelegramError as e:
-                    logger.error(
-                        f"Failed to notify admin {admin.id}: {e}"
-                    )
+            admins = session.query(Admin).filter(Admin.is_active == True).all()
+            admin_ids = [(a.id, a.telegram_id) for a in admins]
+
+        for admin_id, telegram_id in admin_ids:
+            try:
+                await bot.send_message(
+                    chat_id=telegram_id,
+                    text=text,
+                    reply_markup=keyboard,
+                )
+            except TelegramError as e:
+                logger.error(f"Failed to notify admin {admin_id}: {e}")
 
 
 async def notify_admin_group(bot: Bot, text: str):

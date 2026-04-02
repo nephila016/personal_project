@@ -4,6 +4,8 @@ import traceback
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from bot.utils.i18n import get_lang, t
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,20 +19,20 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error(f"Traceback:\n{tb_string}")
 
     # Attempt to notify the user
-    if isinstance(update, Update) and update.effective_message:
-        try:
-            await update.effective_message.reply_text(
-                "Something went wrong. Please try again later.\n"
-                "If the problem persists, contact support."
-            )
-        except Exception:
-            # If we can't even send the error message, just log it
-            logger.error("Failed to send error message to user.")
+    if isinstance(update, Update):
+        lang = get_lang(context)
 
-    elif isinstance(update, Update) and update.callback_query:
-        try:
-            await update.callback_query.answer(
-                "Something went wrong. Please try again.", show_alert=True
-            )
-        except Exception:
-            logger.error("Failed to send error callback answer to user.")
+        if update.effective_message:
+            try:
+                await update.effective_message.reply_text(t("error_generic", lang))
+            except Exception:
+                # If we can't even send the error message, just log it
+                logger.error("Failed to send error message to user.")
+
+        elif update.callback_query:
+            try:
+                await update.callback_query.answer(
+                    t("error_generic", lang), show_alert=True
+                )
+            except Exception:
+                logger.error("Failed to send error callback answer to user.")
