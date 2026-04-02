@@ -1,0 +1,11 @@
+.git
+.env
+.venv
+venv
+__pycache__
+*.pyc
+.claude
+logs/*
+bot_persistence/*
+specs
+.pytest_cache
