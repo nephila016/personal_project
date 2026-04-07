@@ -164,7 +164,10 @@ def _cleanup_reorder_data(context: ContextTypes.DEFAULT_TYPE):
 
 
 reorder_conversation = ConversationHandler(
-    entry_points=[CommandHandler("reorder", reorder_command)],
+    entry_points=[
+        CommandHandler("reorder", reorder_command),
+        MessageHandler(filters.Regex("^(🔄 Повторить|🔄 Takrorlash)$"), reorder_command),
+    ],
     states={
         CONFIRM_REORDER: [
             CallbackQueryHandler(confirm_reorder, pattern=r"^reorder_confirm$"),

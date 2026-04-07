@@ -1,5 +1,11 @@
-"""Handler for persistent reply keyboard button presses."""
+"""Handler for persistent reply keyboard button presses.
+
+Simple commands (help, lang, myorders, pending, stock) are called directly.
+Conversation-based commands are handled by adding MessageHandler entry points
+to the ConversationHandlers (see each handler module).
+"""
 import logging
+import re
 
 from telegram import Update
 from telegram.ext import ContextTypes, MessageHandler, filters
@@ -15,30 +21,6 @@ from bot.keyboards.customer_kb import (
 from bot.utils.i18n import get_lang, t
 
 logger = logging.getLogger(__name__)
-
-# Map button labels (all languages) to command functions
-_BUTTON_COMMANDS = {}
-
-
-def _build_button_map():
-    """Build a mapping of button label text -> command string."""
-    global _BUTTON_COMMANDS
-    for lang in ("ru", "uz"):
-        _BUTTON_COMMANDS[t("kb_new_order", lang)] = "/order"
-        _BUTTON_COMMANDS[t("kb_my_orders", lang)] = "/myorders"
-        _BUTTON_COMMANDS[t("kb_reorder", lang)] = "/reorder"
-        _BUTTON_COMMANDS[t("kb_profile", lang)] = "/profile"
-        _BUTTON_COMMANDS[t("kb_help", lang)] = "/help"
-        _BUTTON_COMMANDS[t("kb_lang", lang)] = "/lang"
-        _BUTTON_COMMANDS[t("kb_pending", lang)] = "/pending"
-        _BUTTON_COMMANDS[t("kb_active", lang)] = "/myactive"
-        _BUTTON_COMMANDS[t("kb_receive", lang)] = "/receive"
-        _BUTTON_COMMANDS[t("kb_returns", lang)] = "/returns"
-        _BUTTON_COMMANDS[t("kb_stock", lang)] = "/stock"
-        _BUTTON_COMMANDS[t("kb_customer_lookup", lang)] = "/customer"
-
-
-_build_button_map()
 
 
 def get_reply_keyboard(user_id: int, lang: str):
@@ -64,25 +46,68 @@ def get_reply_keyboard(user_id: int, lang: str):
     return customer_reply_keyboard(lang)
 
 
-async def menu_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Route reply keyboard button presses to their corresponding commands."""
+def _regex_for(*i18n_keys: str) -> str:
+    """Build a regex pattern matching button labels across all languages."""
+    labels = []
+    for key in i18n_keys:
+        for lang in ("ru", "uz"):
+            label = t(key, lang)
+            labels.append(re.escape(label))
+    return "^(" + "|".join(labels) + ")$"
+
+
+# Filters for each button — used by ConversationHandler entry_points
+# and by the simple-command handler below.
+FILTER_ORDER = filters.Regex(_regex_for("kb_new_order"))
+FILTER_MY_ORDERS = filters.Regex(_regex_for("kb_my_orders"))
+FILTER_REORDER = filters.Regex(_regex_for("kb_reorder"))
+FILTER_PROFILE = filters.Regex(_regex_for("kb_profile"))
+FILTER_HELP = filters.Regex(_regex_for("kb_help"))
+FILTER_LANG = filters.Regex(_regex_for("kb_lang"))
+FILTER_PENDING = filters.Regex(_regex_for("kb_pending"))
+FILTER_ACTIVE = filters.Regex(_regex_for("kb_active"))
+FILTER_RECEIVE = filters.Regex(_regex_for("kb_receive"))
+FILTER_RETURNS = filters.Regex(_regex_for("kb_returns"))
+FILTER_STOCK = filters.Regex(_regex_for("kb_stock"))
+FILTER_CUSTOMER = filters.Regex(_regex_for("kb_customer_lookup"))
+
+
+async def _handle_simple_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle non-conversation buttons by calling the command function directly."""
     text = update.message.text.strip()
-    command = _BUTTON_COMMANDS.get(text)
 
-    if not command:
-        return  # Not a menu button, let other handlers deal with it
+    try:
+        for lang in ("ru", "uz"):
+            if text == t("kb_my_orders", lang):
+                from bot.handlers.my_orders import myorders_command
+                return await myorders_command(update, context)
+            if text == t("kb_help", lang):
+                from bot.handlers.help import help_command
+                return await help_command(update, context)
+            if text == t("kb_lang", lang):
+                from bot.handlers.lang import lang_command
+                return await lang_command(update, context)
+            if text == t("kb_pending", lang):
+                from bot.handlers.admin_pending import pending_command
+                return await pending_command(update, context)
+            if text == t("kb_active", lang):
+                from bot.handlers.admin_active import myactive_command
+                return await myactive_command(update, context)
+            if text == t("kb_stock", lang):
+                from bot.handlers.admin_stock import stock_command
+                return await stock_command(update, context)
+    except Exception:
+        logger.exception("Error handling menu button '%s'", text)
+        lang = get_lang(context)
+        await update.message.reply_text(t("error_generic", lang))
 
-    # Fake a command message by setting the text and re-processing
-    update.message.text = command
-    # Process the command through the application's handlers
-    await context.application.process_update(update)
+
+# Simple (non-conversation) button filter
+SIMPLE_FILTER = (
+    FILTER_MY_ORDERS | FILTER_HELP | FILTER_LANG |
+    FILTER_PENDING | FILTER_ACTIVE | FILTER_STOCK
+)
 
 
 def get_handlers():
-    # Use a low group number so this handler is checked after ConversationHandlers
-    # and only catches messages that look like our menu button labels
-    button_labels = list(_BUTTON_COMMANDS.keys())
-    menu_filter = filters.TEXT & filters.Regex(
-        "^(" + "|".join(map(lambda x: x.replace("(", "\\(").replace(")", "\\)"), button_labels)) + ")$"
-    )
-    return [MessageHandler(menu_filter, menu_button_handler)]
+    return [MessageHandler(SIMPLE_FILTER, _handle_simple_button)]

@@ -288,7 +288,10 @@ def _skip_keyboard(lang: str = "ru"):
 
 
 order_conversation = ConversationHandler(
-    entry_points=[CommandHandler("order", order_command)],
+    entry_points=[
+        CommandHandler("order", order_command),
+        MessageHandler(filters.Regex("^(💧 Новый заказ|💧 Yangi buyurtma)$"), order_command),
+    ],
     states={
         SELECT_BOTTLES: [
             CallbackQueryHandler(select_bottles, pattern=r"^bottles_"),

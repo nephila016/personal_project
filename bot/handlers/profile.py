@@ -148,7 +148,10 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 profile_conversation = ConversationHandler(
-    entry_points=[CommandHandler("profile", profile_command)],
+    entry_points=[
+        CommandHandler("profile", profile_command),
+        MessageHandler(filters.Regex("^(👤 Профиль|👤 Profilim)$"), profile_command),
+    ],
     states={
         SHOW_PROFILE: [
             CallbackQueryHandler(edit_name_start, pattern=r"^edit_name$"),

@@ -318,6 +318,7 @@ def get_handlers():
     conv = ConversationHandler(
         entry_points=[
             CommandHandler("returns", returns_command),
+            MessageHandler(filters.Regex("^(♻️ Возвраты|♻️ Qaytarishlar)$"), returns_command),
         ],
         states={
             SELECT_CUSTOMER: [

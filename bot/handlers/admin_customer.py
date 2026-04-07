@@ -220,6 +220,7 @@ def get_handlers():
     conv = ConversationHandler(
         entry_points=[
             CommandHandler("customer", customer_command),
+            MessageHandler(filters.Regex("^(🔍 Клиент|🔍 Mijoz)$"), customer_command),
         ],
         states={
             ENTER_SEARCH: [
