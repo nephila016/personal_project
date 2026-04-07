@@ -590,9 +590,13 @@ TRANSLATIONS = {
     },
 
     # ===== Admin: Receive (extra) =====
+    "receive_current_stock": {
+        "ru": "📊 Сейчас у вас: {stock} полных бутылок\n⏳ Ожидающих заказов: {pending}",
+        "uz": "📊 Hozir sizda: {stock} to'la shisha\n⏳ Kutayotgan buyurtmalar: {pending}",
+    },
     "how_many_received_full": {
-        "ru": "📦 Сколько ПОЛНЫХ бутылок вы загрузили?\n(1 - {max})",
-        "uz": "📦 Necha TO'LA shisha yuklagansiz?\n(1 - {max})",
+        "ru": "📦 Сколько ПОЛНЫХ бутылок загружаете?\n(1 - {max})",
+        "uz": "📦 Necha TO'LA shisha yuklayapsiz?\n(1 - {max})",
     },
     "enter_valid_quantity": {
         "ru": "Введите число от 1 до {max}.",

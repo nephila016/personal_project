@@ -32,11 +32,20 @@ ENTER_QTY, ENTER_NOTES, CONFIRM = range(3)
 
 @require_admin
 async def receive_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """/receive - start the bottle-receipt flow."""
+    """/receive - start the bottle-receipt flow. Shows current stock first."""
     lang = get_lang(context)
-    await update.message.reply_text(
-        t("how_many_received_full", lang, max=Config.MAX_RECEIPT_QUANTITY)
-    )
+    admin_id = context.user_data["admin_id"]
+
+    with get_session() as session:
+        inv = bottle_service.get_admin_inventory(session, admin_id)
+
+    current = inv["current_stock"]
+    pending = inv["pending_orders"]
+
+    text = t("receive_current_stock", lang, stock=current, pending=pending)
+    text += "\n\n" + t("how_many_received_full", lang, max=Config.MAX_RECEIPT_QUANTITY)
+
+    await update.message.reply_text(text)
     return ENTER_QTY
 
 
