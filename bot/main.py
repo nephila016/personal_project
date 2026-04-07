@@ -59,6 +59,7 @@ def create_application() -> Application:
     from bot.handlers.admin_returns import get_handlers as admin_returns_handlers
     from bot.handlers.admin_customer import get_handlers as admin_customer_handlers
     from bot.handlers.admin_stock import get_handlers as admin_stock_handlers
+    from bot.handlers.menu import get_handlers as menu_handlers
 
     handler_modules = [
         start_handlers,
@@ -75,6 +76,7 @@ def create_application() -> Application:
         admin_returns_handlers,
         admin_customer_handlers,
         admin_stock_handlers,
+        menu_handlers,
     ]
 
     for get_handlers in handler_modules:

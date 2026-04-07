@@ -14,6 +14,7 @@ from app.database import get_session
 from app.services import customer_service
 from bot.keyboards.customer_kb import confirm_edit_keyboard
 from bot.utils.i18n import get_lang, t
+from bot.handlers.menu import get_reply_keyboard
 from bot.utils.validators import normalize_phone, validate_address, validate_name, validate_phone
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     if customer_name:
         lang = get_lang(context)
-        await update.message.reply_text(t("welcome_back", lang, name=customer_name))
+        keyboard = get_reply_keyboard(user.id, lang)
+        await update.message.reply_text(
+            t("welcome_back", lang, name=customer_name),
+            reply_markup=keyboard,
+        )
         return ConversationHandler.END
 
     # New user -- check if they already have a language set (e.g. from /lang)
@@ -168,6 +173,10 @@ async def confirm_registration(update: Update, context: ContextTypes.DEFAULT_TYP
             context.user_data.pop(key, None)
 
         await query.edit_message_text(t("registration_complete", lang))
+
+        # Send the persistent reply keyboard
+        keyboard = get_reply_keyboard(user.id, lang)
+        await query.message.reply_text("👇", reply_markup=keyboard)
     except ValueError as e:
         await query.edit_message_text(t("registration_error", lang, error=str(e)))
 

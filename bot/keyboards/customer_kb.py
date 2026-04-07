@@ -1,4 +1,4 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
 from bot.utils.i18n import t
 
@@ -84,6 +84,44 @@ def confirm_edit_keyboard(lang: str = "ru") -> InlineKeyboardMarkup:
                 InlineKeyboardButton(t("btn_edit_phone", lang), callback_data="reg_edit_phone"),
             ],
         ]
+    )
+
+
+def customer_reply_keyboard(lang: str = "ru") -> ReplyKeyboardMarkup:
+    """Persistent reply keyboard for customers."""
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton(t("kb_new_order", lang)), KeyboardButton(t("kb_my_orders", lang))],
+            [KeyboardButton(t("kb_reorder", lang)), KeyboardButton(t("kb_profile", lang))],
+            [KeyboardButton(t("kb_help", lang)), KeyboardButton(t("kb_lang", lang))],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def admin_reply_keyboard(lang: str = "ru") -> ReplyKeyboardMarkup:
+    """Persistent reply keyboard for admins."""
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton(t("kb_pending", lang)), KeyboardButton(t("kb_active", lang))],
+            [KeyboardButton(t("kb_receive", lang)), KeyboardButton(t("kb_returns", lang))],
+            [KeyboardButton(t("kb_stock", lang)), KeyboardButton(t("kb_customer_lookup", lang))],
+            [KeyboardButton(t("kb_help", lang)), KeyboardButton(t("kb_lang", lang))],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def dual_role_reply_keyboard(lang: str = "ru") -> ReplyKeyboardMarkup:
+    """Persistent reply keyboard for users with both customer and admin roles."""
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton(t("kb_new_order", lang)), KeyboardButton(t("kb_my_orders", lang))],
+            [KeyboardButton(t("kb_pending", lang)), KeyboardButton(t("kb_active", lang))],
+            [KeyboardButton(t("kb_receive", lang)), KeyboardButton(t("kb_stock", lang))],
+            [KeyboardButton(t("kb_profile", lang)), KeyboardButton(t("kb_help", lang))],
+        ],
+        resize_keyboard=True,
     )
 
 

@@ -3,6 +3,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
+from bot.handlers.menu import get_reply_keyboard
 from bot.utils.i18n import get_lang, t
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,12 @@ async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.user_data["lang"] = lang_code
 
     await query.edit_message_text(t("lang_selected", lang_code))
+
+    # Refresh the reply keyboard in the new language
+    user = update.effective_user
+    if user:
+        keyboard = get_reply_keyboard(user.id, lang_code)
+        await query.message.reply_text("👇", reply_markup=keyboard)
 
 
 lang_handler = CommandHandler("lang", lang_command)

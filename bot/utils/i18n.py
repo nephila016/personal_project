@@ -762,6 +762,20 @@ TRANSLATIONS = {
     "bottles_short": {"ru": "бут.", "uz": "shisha"},
     "btn_not_needed": {"ru": "Не нужно", "uz": "Kerak emas"},
     "btn_on_hand": {"ru": "на руках", "uz": "qo'lida"},
+
+    # ===== Reply Keyboard (persistent menu) =====
+    "kb_new_order": {"ru": "💧 Новый заказ", "uz": "💧 Yangi buyurtma"},
+    "kb_my_orders": {"ru": "📋 Мои заказы", "uz": "📋 Buyurtmalarim"},
+    "kb_reorder": {"ru": "🔄 Повторить", "uz": "🔄 Takrorlash"},
+    "kb_profile": {"ru": "👤 Профиль", "uz": "👤 Profilim"},
+    "kb_help": {"ru": "❓ Помощь", "uz": "❓ Yordam"},
+    "kb_lang": {"ru": "🌐 Язык", "uz": "🌐 Til"},
+    "kb_pending": {"ru": "📥 Ожидающие", "uz": "📥 Kutayotganlar"},
+    "kb_active": {"ru": "🚚 Активные", "uz": "🚚 Faollar"},
+    "kb_receive": {"ru": "📦 Приёмка", "uz": "📦 Qabul qilish"},
+    "kb_returns": {"ru": "♻️ Возвраты", "uz": "♻️ Qaytarishlar"},
+    "kb_stock": {"ru": "📊 Склад", "uz": "📊 Ombor"},
+    "kb_customer_lookup": {"ru": "🔍 Клиент", "uz": "🔍 Mijoz"},
 }
 
 DEFAULT_LANG = "ru"
