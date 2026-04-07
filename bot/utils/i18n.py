@@ -437,28 +437,28 @@ TRANSLATIONS = {
 
     # ===== Admin: Stock =====
     "stock_header": {
-        "ru": "Ваш склад бутылок",
-        "uz": "Shisha omboringiz",
+        "ru": "📊 Ваш склад",
+        "uz": "📊 Sizning omboringiz",
     },
     "stock_received": {
-        "ru": "Получено от поставщика:  {n}",
-        "uz": "Yetkazuvchidan olingan:  {n}",
+        "ru": "📦 Загружено (полных):     {n}",
+        "uz": "📦 Yuklangan (to'la):      {n}",
     },
     "stock_delivered": {
-        "ru": "Доставлено клиентам:     {n}",
-        "uz": "Mijozlarga yetkazilgan:  {n}",
+        "ru": "🚚 Доставлено клиентам:    {n}",
+        "uz": "🚚 Mijozlarga yetkazilgan: {n}",
     },
     "stock_current": {
-        "ru": "Текущий запас (полных):  {n}",
-        "uz": "Joriy zaxira (to'la):    {n}",
+        "ru": "💧 Полных в наличии:       {n}",
+        "uz": "💧 To'la shishalar:        {n}",
     },
     "stock_empties": {
-        "ru": "Собрано пустых:          {n}",
-        "uz": "Yig'ilgan bo'sh:         {n}",
+        "ru": "♻️ Пустых собрано:          {n}",
+        "uz": "♻️ Bo'sh yig'ilgan:         {n}",
     },
     "stock_pending": {
-        "ru": "Ожидание: {bottles} бут. в {orders} заказах",
-        "uz": "Kutmoqda: {bottles} shisha {orders} ta buyurtmada",
+        "ru": "⏳ В очереди: {bottles} бут. в {orders} заказах",
+        "uz": "⏳ Navbatda: {bottles} shisha {orders} ta buyurtmada",
     },
     "stock_low_warning": {
         "ru": "⚠️ Мало запасов! Используйте /receive для пополнения.",
@@ -583,8 +583,8 @@ TRANSLATIONS = {
 
     # ===== Admin: Receive (extra) =====
     "how_many_received_full": {
-        "ru": "Сколько бутылок вы получили от поставщика?\n(1 - {max})",
-        "uz": "Yetkazib beruvchidan necha shisha oldingiz?\n(1 - {max})",
+        "ru": "📦 Сколько ПОЛНЫХ бутылок вы загрузили?\n(1 - {max})",
+        "uz": "📦 Necha TO'LA shisha yuklagansiz?\n(1 - {max})",
     },
     "enter_valid_quantity": {
         "ru": "Введите число от 1 до {max}.",
@@ -788,9 +788,9 @@ TRANSLATIONS = {
     "kb_lang": {"ru": "🌐 Язык", "uz": "🌐 Til"},
     "kb_pending": {"ru": "📥 Ожидающие", "uz": "📥 Kutayotganlar"},
     "kb_active": {"ru": "🚚 Активные", "uz": "🚚 Faollar"},
-    "kb_receive": {"ru": "📦 Приёмка", "uz": "📦 Qabul qilish"},
+    "kb_receive": {"ru": "📦 Загрузка", "uz": "📦 Yuklash"},
     "kb_returns": {"ru": "♻️ Возвраты", "uz": "♻️ Qaytarishlar"},
-    "kb_stock": {"ru": "📊 Склад", "uz": "📊 Ombor"},
+    "kb_stock": {"ru": "📊 Мой склад", "uz": "📊 Omborim"},
     "kb_customer_lookup": {"ru": "🔍 Клиент", "uz": "🔍 Mijoz"},
 }
 

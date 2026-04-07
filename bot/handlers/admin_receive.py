@@ -186,7 +186,7 @@ def get_handlers():
     conv = ConversationHandler(
         entry_points=[
             CommandHandler("receive", receive_command),
-            MessageHandler(filters.Regex("^(📦 Приёмка|📦 Qabul qilish)$"), receive_command),
+            MessageHandler(filters.Regex("^(📦 Загрузка|📦 Yuklash)$"), receive_command),
         ],
         states={
             ENTER_QTY: [
