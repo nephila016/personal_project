@@ -16,6 +16,7 @@ htmlcov/
 .coverage
 bot_persistence/
 logs/
+backups/
 *.db
 *.sqlite3
 migrations/versions/__pycache__/

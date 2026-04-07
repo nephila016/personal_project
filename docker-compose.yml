@@ -60,5 +60,8 @@ services:
 
 volumes:
   pgdata:
+    driver: local
   bot_persistence:
+    driver: local
   logs:
+    driver: local
