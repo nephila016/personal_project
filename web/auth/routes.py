@@ -6,12 +6,14 @@ from flask_login import current_user, login_required, login_user, logout_user
 from app.database import db
 from app.models.global_admin import GlobalAdmin
 from config import Config
+from web import limiter
 from web.auth.forms import ChangePasswordForm, LoginForm
 
 auth_bp = Blueprint("auth", __name__)
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5/minute", methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))

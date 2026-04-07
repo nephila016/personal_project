@@ -50,7 +50,7 @@
 
                 <hr>
 
-                <form method="POST" action="{{ url_for('dashboard.customer_toggle_active', customer_id=customer.id) }}">
+                <form method="POST" action="{{ url_for('dashboard.toggle_customer', customer_id=customer.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     {% if customer.is_active %}
                         <button type="submit" class="btn btn-outline-danger btn-sm w-100">

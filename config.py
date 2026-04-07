@@ -47,7 +47,13 @@ class ProductionConfig(Config):
 
 class TestConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "postgresql://localhost/water_dis_test"
+    DATABASE_URL = "sqlite://"
+    SQLALCHEMY_DATABASE_URI = "sqlite://"
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "poolclass": __import__("sqlalchemy.pool", fromlist=["StaticPool"]).StaticPool,
+        "connect_args": {"check_same_thread": False},
+    }
 
 
 config_map = {

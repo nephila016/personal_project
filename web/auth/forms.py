@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, SubmitField
-from wtforms.validators import DataRequired, EqualTo, Length
+from wtforms.validators import DataRequired, EqualTo, Length, Optional
 
 
 class LoginForm(FlaskForm):
@@ -18,3 +18,10 @@ class ChangePasswordForm(FlaskForm):
         validators=[DataRequired(), EqualTo("new_password", message="Passwords must match")],
     )
     submit = SubmitField("Change Password")
+
+
+class AdminForm(FlaskForm):
+    telegram_id = StringField("Telegram ID", validators=[DataRequired()])
+    full_name = StringField("Full Name", validators=[DataRequired()])
+    phone = StringField("Phone", validators=[Optional()])
+    submit = SubmitField("Create Admin")

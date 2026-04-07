@@ -1,4 +1,8 @@
-from flask import Blueprint, jsonify, request
+import csv
+import io
+from datetime import datetime, timezone
+
+from flask import Blueprint, Response, jsonify, request
 from flask_login import login_required
 
 from app.database import db
@@ -86,4 +90,52 @@ def returns():
             "page": page,
             "per_page": per_page,
         }
+    )
+
+
+@inventory_api.route("/inventory/export")
+@login_required
+def export_inventory():
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["--- Receipts ---"])
+    writer.writerow(["ID", "Admin", "Quantity", "Notes", "Received At"])
+    receipt_items = (
+        db.session.query(BottleReceipt)
+        .order_by(BottleReceipt.received_at.desc())
+        .all()
+    )
+    for r in receipt_items:
+        writer.writerow([
+            r.id,
+            r.admin.full_name,
+            r.quantity,
+            r.notes or "",
+            r.received_at.isoformat() if r.received_at else "",
+        ])
+
+    writer.writerow([])
+    writer.writerow(["--- Returns ---"])
+    writer.writerow(["ID", "Customer", "Admin", "Quantity", "Notes", "Returned At"])
+    return_items = (
+        db.session.query(BottleReturn)
+        .order_by(BottleReturn.returned_at.desc())
+        .all()
+    )
+    for r in return_items:
+        writer.writerow([
+            r.id,
+            r.customer.full_name,
+            r.admin.full_name,
+            r.quantity,
+            r.notes or "",
+            r.returned_at.isoformat() if r.returned_at else "",
+        ])
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="inventory_{today}.csv"'},
     )

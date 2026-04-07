@@ -336,6 +336,10 @@ def list_orders(
     customer_id: int | None = None,
     admin_id: int | None = None,
     search: str | None = None,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    sort: str = "created_at",
+    order: str = "desc",
 ):
     from app.models.customer import Customer
 
@@ -346,16 +350,22 @@ def list_orders(
         q = q.filter(Order.customer_id == customer_id)
     if admin_id:
         q = q.filter(Order.admin_id == admin_id)
+    if from_date:
+        q = q.filter(Order.created_at >= from_date)
+    if to_date:
+        q = q.filter(Order.created_at <= to_date)
     if search:
         q = q.join(Customer).filter(
             Customer.full_name.ilike(f"%{search}%")
             | Customer.phone.like(f"%{search}%")
         )
+
+    sort_col = getattr(Order, sort, Order.created_at)
+    if order == "asc":
+        q = q.order_by(sort_col.asc())
+    else:
+        q = q.order_by(sort_col.desc())
+
     total = q.count()
-    items = (
-        q.order_by(Order.created_at.desc())
-        .offset((page - 1) * per_page)
-        .limit(per_page)
-        .all()
-    )
+    items = q.offset((page - 1) * per_page).limit(per_page).all()
     return items, total

@@ -46,7 +46,7 @@
 
                 <hr>
 
-                <form method="POST" action="{{ url_for('dashboard.admin_toggle_active', admin_id=admin.id) }}">
+                <form method="POST" action="{{ url_for('dashboard.toggle_admin', admin_id=admin.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     {% if admin.is_active %}
                         <button type="submit" class="btn btn-outline-danger btn-sm w-100">
@@ -79,7 +79,7 @@
                         <div class="text-muted small">Total Delivered</div>
                     </div>
                     <div class="col-sm-3 mb-3 mb-sm-0">
-                        <div class="fs-3 fw-bold text-info">{{ inventory.total_returned }}</div>
+                        <div class="fs-3 fw-bold text-info">{{ inventory.empties_collected }}</div>
                         <div class="text-muted small">Returns Collected</div>
                     </div>
                     <div class="col-sm-3">

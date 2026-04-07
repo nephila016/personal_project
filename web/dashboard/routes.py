@@ -10,6 +10,7 @@ from app.models.bottle_return import BottleReturn
 from app.models.customer import Customer
 from app.models.order import Order, OrderStatus
 from app.services import bottle_service, customer_service, order_service, stats_service
+from web.auth.forms import AdminForm
 
 dashboard_bp = Blueprint(
     "dashboard", __name__, url_prefix="/dashboard"
@@ -61,7 +62,12 @@ def orders():
         page=page,
         pages=pages,
         per_page=per_page,
-        filters={"status": status, "search": search},
+        filters={
+            "status": status,
+            "search": search,
+            "date_from": request.args.get("date_from", ""),
+            "date_to": request.args.get("date_to", ""),
+        },
     )
 
 
@@ -178,26 +184,33 @@ def admins():
 
 @dashboard_bp.route("/admins/new", methods=["GET", "POST"])
 def admin_new():
-    if request.method == "POST":
-        telegram_id = request.form.get("telegram_id", "").strip()
-        full_name = request.form.get("full_name", "").strip()
-        phone = request.form.get("phone", "").strip()
+    form = AdminForm()
+    if form.validate_on_submit():
+        telegram_id = form.telegram_id.data.strip()
+        full_name = form.full_name.data.strip()
+        phone = (form.phone.data or "").strip()
 
         if not telegram_id or not full_name:
             flash("Telegram ID and Full Name are required.", "danger")
-            return render_template("admin_form.html")
+            return render_template("admin_form.html", form=form)
+
+        try:
+            tid = int(telegram_id)
+        except ValueError:
+            flash("Telegram ID must be a number.", "danger")
+            return render_template("admin_form.html", form=form)
 
         existing = (
             db.session.query(Admin)
-            .filter(Admin.telegram_id == int(telegram_id))
+            .filter(Admin.telegram_id == tid)
             .first()
         )
         if existing:
             flash("Admin with this Telegram ID already exists.", "danger")
-            return render_template("admin_form.html")
+            return render_template("admin_form.html", form=form)
 
         admin = Admin(
-            telegram_id=int(telegram_id),
+            telegram_id=tid,
             full_name=full_name,
             phone=phone or None,
         )
@@ -206,7 +219,7 @@ def admin_new():
         flash(f"Admin {full_name} added.", "success")
         return redirect(url_for("dashboard.admins"))
 
-    return render_template("admin_form.html")
+    return render_template("admin_form.html", form=form)
 
 
 @dashboard_bp.route("/admins/<int:admin_id>")

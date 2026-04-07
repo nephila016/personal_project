@@ -1,12 +1,24 @@
+import csv
+import io
 import math
+from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 from flask_login import login_required
 
 from app.database import db
 from app.services import order_service
 
 orders_api = Blueprint("orders_api", __name__, url_prefix="/api/v1")
+
+
+def _parse_date(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
 
 
 @orders_api.route("/orders")
@@ -18,6 +30,10 @@ def list_orders():
     customer_id = request.args.get("customer_id", type=int)
     admin_id = request.args.get("admin_id", type=int)
     search = request.args.get("search")
+    from_date = _parse_date(request.args.get("from_date"))
+    to_date = _parse_date(request.args.get("to_date"))
+    sort = request.args.get("sort", "created_at")
+    order = request.args.get("order", "desc")
 
     items, total = order_service.list_orders(
         db.session,
@@ -27,6 +43,10 @@ def list_orders():
         customer_id=customer_id,
         admin_id=admin_id,
         search=search,
+        from_date=from_date,
+        to_date=to_date,
+        sort=sort,
+        order=order,
     )
     pages = max(1, math.ceil(total / per_page))
 
@@ -38,6 +58,54 @@ def list_orders():
             "per_page": per_page,
             "pages": pages,
         }
+    )
+
+
+@orders_api.route("/orders/export")
+@login_required
+def export_orders():
+    status = request.args.get("status")
+    customer_id = request.args.get("customer_id", type=int)
+    admin_id = request.args.get("admin_id", type=int)
+    from_date = _parse_date(request.args.get("from_date"))
+    to_date = _parse_date(request.args.get("to_date"))
+
+    items, _ = order_service.list_orders(
+        db.session,
+        page=1,
+        per_page=10000,
+        status=status,
+        customer_id=customer_id,
+        admin_id=admin_id,
+        from_date=from_date,
+        to_date=to_date,
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "Customer", "Phone", "Admin", "Bottles",
+        "Address", "Notes", "Status", "Canceled By", "Created At",
+    ])
+    for o in items:
+        writer.writerow([
+            o.id,
+            o.customer.full_name if o.customer else "",
+            o.customer.phone if o.customer else "",
+            o.admin.full_name if o.admin else "",
+            o.bottle_count,
+            o.delivery_address,
+            o.delivery_notes or "",
+            o.status,
+            o.canceled_by or "",
+            o.created_at.isoformat() if o.created_at else "",
+        ])
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="orders_{today}.csv"'},
     )
 
 
@@ -127,7 +195,7 @@ def order_history(order_id):
 
 
 def _order_to_dict(order):
-    d = {
+    return {
         "id": order.id,
         "customer": {
             "id": order.customer.id,
@@ -152,4 +220,3 @@ def _order_to_dict(order):
         "created_at": order.created_at.isoformat() if order.created_at else None,
         "updated_at": order.updated_at.isoformat() if order.updated_at else None,
     }
-    return d

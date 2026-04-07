@@ -37,7 +37,12 @@ class GlobalAdmin(UserMixin, Base):
     def is_locked(self) -> bool:
         if self.locked_until is None:
             return False
-        return datetime.now(timezone.utc) < self.locked_until
+        now = datetime.now(timezone.utc)
+        locked = self.locked_until
+        # Handle naive datetimes from SQLite (no timezone support)
+        if locked.tzinfo is None:
+            locked = locked.replace(tzinfo=timezone.utc)
+        return now < locked
 
     def __repr__(self):
         return f"<GlobalAdmin {self.id}: {self.username}>"

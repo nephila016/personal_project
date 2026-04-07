@@ -97,6 +97,34 @@ def get_admin(admin_id):
     )
 
 
+@admins_api.route("/admins/<int:admin_id>", methods=["PATCH"])
+@login_required
+def update_admin(admin_id):
+    admin = db.session.get(Admin, admin_id)
+    if not admin:
+        return jsonify({"error": "Admin not found", "code": "NOT_FOUND"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON", "code": "BAD_REQUEST"}), 400
+
+    allowed_fields = {"full_name", "phone", "telegram_username", "is_active"}
+    for key, value in data.items():
+        if key in allowed_fields:
+            setattr(admin, key, value.strip() if isinstance(value, str) else value)
+
+    db.session.commit()
+    return jsonify(
+        {
+            "id": admin.id,
+            "telegram_id": admin.telegram_id,
+            "full_name": admin.full_name,
+            "phone": admin.phone,
+            "is_active": admin.is_active,
+        }
+    )
+
+
 @admins_api.route("/admins/<int:admin_id>/stock")
 @login_required
 def admin_stock(admin_id):

@@ -27,7 +27,7 @@ def create_app(config_name: str | None = None) -> Flask:
     login_manager.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app)
 
     @login_manager.user_loader
     def load_user(user_id):
