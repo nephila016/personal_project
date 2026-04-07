@@ -3,6 +3,7 @@ import logging
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.models.admin import Admin
 from app.models.bottle_receipt import BottleReceipt
 from app.models.bottle_return import BottleReturn
 
@@ -99,12 +100,22 @@ def get_customer_bottles(session: Session, customer_id: int) -> dict:
         )
         .scalar()
     )
+    last_order = (
+        session.query(Order.created_at)
+        .filter(
+            Order.customer_id == customer_id,
+            Order.status == OrderStatus.DELIVERED.value,
+        )
+        .order_by(Order.created_at.desc())
+        .first()
+    )
     return {
         "total_ordered": total_ordered,
         "total_delivered": total_delivered,
         "total_returned": total_returned,
         "bottles_in_hand": total_delivered - total_returned,
         "pending_bottles": total_pending,
+        "last_delivery_date": last_order[0] if last_order else None,
     }
 
 
@@ -183,4 +194,56 @@ def get_global_bottle_stats(session: Session) -> dict:
         "total_returned": total_returned,
         "customer_in_hand": total_delivered - total_returned,
         "pending_delivery": total_pending,
+        # Supplier accountability: all bottles the business owns
+        "total_in_field": (total_received - total_delivered) + (total_delivered - total_returned),
+        # = total_received - total_returned (bottles not yet back as empties)
     }
+
+
+def get_all_customers_bottle_summary(session: Session) -> list[dict]:
+    """Get bottle accountability for all customers who have bottles in hand."""
+    from app.models.customer import Customer
+
+    customers = (
+        session.query(Customer)
+        .filter(Customer.is_active == True)
+        .order_by(Customer.full_name)
+        .all()
+    )
+    result = []
+    for c in customers:
+        stats = get_customer_bottles(session, c.id)
+        if stats["bottles_in_hand"] > 0 or stats["pending_bottles"] > 0:
+            result.append({
+                "id": c.id,
+                "full_name": c.full_name,
+                "phone": c.phone,
+                "bottles_in_hand": stats["bottles_in_hand"],
+                "total_delivered": stats["total_delivered"],
+                "total_returned": stats["total_returned"],
+                "pending_bottles": stats["pending_bottles"],
+                "last_delivery_date": stats["last_delivery_date"],
+            })
+    return result
+
+
+def get_all_drivers_stock_summary(session: Session) -> list[dict]:
+    """Get stock summary for all active drivers."""
+    drivers = (
+        session.query(Admin)
+        .filter(Admin.is_active == True)
+        .order_by(Admin.full_name)
+        .all()
+    )
+    result = []
+    for d in drivers:
+        inv = get_admin_inventory(session, d.id)
+        result.append({
+            "id": d.id,
+            "full_name": d.full_name,
+            "current_stock": inv["current_stock"],
+            "empties_collected": inv["empties_collected"],
+            "total_delivered": inv["total_delivered"],
+            "pending_orders": inv["pending_orders"],
+        })
+    return result

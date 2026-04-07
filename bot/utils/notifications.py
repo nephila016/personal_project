@@ -41,17 +41,21 @@ async def notify_admins_new_order(bot: Bot, order_data: dict):
 
     order_data should be a plain dict with keys:
         id, customer_name, customer_phone, bottle_count,
-        delivery_address, delivery_notes, version
+        delivery_address, delivery_notes, version, bottles_in_hand
     """
     text = (
-        f"Новый заказ #{order_data['id']}\n"
-        f"Клиент: {order_data['customer_name']}\n"
-        f"Бутылки: {order_data['bottle_count']}\n"
-        f"Адрес: {order_data['delivery_address']}"
+        f"🆕 Новый заказ #{order_data['id']}\n"
+        f"👤 Клиент: {order_data['customer_name']}\n"
+        f"📞 Телефон: {order_data['customer_phone']}\n"
+        f"💧 Бутылки: {order_data['bottle_count']}\n"
+        f"📍 Адрес: {order_data['delivery_address']}"
     )
     if order_data.get("delivery_notes"):
-        text += f"\nПримечание: {order_data['delivery_notes']}"
-    text += f"\nТелефон: {order_data['customer_phone']}"
+        text += f"\n📝 Примечание: {order_data['delivery_notes']}"
+
+    in_hand = order_data.get("bottles_in_hand")
+    if in_hand is not None:
+        text += f"\n♻️ У клиента на руках: {in_hand} бут."
 
     keyboard = InlineKeyboardMarkup(
         [

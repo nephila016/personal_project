@@ -70,22 +70,37 @@
         <!-- Bottle Stats -->
         <div class="card info-card">
             <div class="card-header">
-                <i class="bi bi-box-seam"></i> Bottle Statistics
+                <i class="bi bi-droplet-half"></i> Bottle Accountability
             </div>
             <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-sm-4 mb-3 mb-sm-0">
-                        <div class="fs-3 fw-bold text-primary">{{ bottle_stats.total_received }}</div>
-                        <div class="text-muted small">Total Received</div>
+                <div class="row text-center mb-3">
+                    <div class="col-sm-3 mb-2">
+                        <div class="fs-3 fw-bold text-primary">{{ bottle_stats.total_delivered }}</div>
+                        <div class="text-muted small">Total Delivered</div>
                     </div>
-                    <div class="col-sm-4 mb-3 mb-sm-0">
+                    <div class="col-sm-3 mb-2">
                         <div class="fs-3 fw-bold text-success">{{ bottle_stats.total_returned }}</div>
-                        <div class="text-muted small">Total Returned</div>
+                        <div class="text-muted small">Empties Returned</div>
                     </div>
-                    <div class="col-sm-4">
-                        <div class="fs-3 fw-bold text-warning">{{ bottle_stats.in_hand }}</div>
+                    <div class="col-sm-3 mb-2">
+                        <div class="fs-3 fw-bold text-warning">{{ bottle_stats.bottles_in_hand }}</div>
                         <div class="text-muted small">Currently In Hand</div>
                     </div>
+                    <div class="col-sm-3 mb-2">
+                        <div class="fs-3 fw-bold text-info">{{ bottle_stats.pending_bottles }}</div>
+                        <div class="text-muted small">Pending Delivery</div>
+                    </div>
+                </div>
+                <div class="text-center text-muted">
+                    <i class="bi bi-calendar3"></i>
+                    Last delivery:
+                    <strong>
+                        {% if bottle_stats.last_delivery_date %}
+                            {{ bottle_stats.last_delivery_date.strftime('%d.%m.%Y %H:%M') }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </strong>
                 </div>
             </div>
         </div>

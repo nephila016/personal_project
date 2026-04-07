@@ -485,24 +485,32 @@ TRANSLATIONS = {
 
     # ===== Bottle stats =====
     "bs_total_ordered": {
-        "ru": "Всего заказано:      {n}",
-        "uz": "Jami buyurtma:       {n}",
+        "ru": "Всего заказано:        {n}",
+        "uz": "Jami buyurtma:         {n}",
     },
     "bs_total_delivered": {
-        "ru": "Всего доставлено:    {n}",
-        "uz": "Jami yetkazilgan:    {n}",
+        "ru": "Всего доставлено:      {n}",
+        "uz": "Jami yetkazilgan:      {n}",
     },
     "bs_returned": {
-        "ru": "Возвращено:          {n}",
-        "uz": "Qaytarilgan:         {n}",
+        "ru": "♻️ Возвращено (пуст.): {n}",
+        "uz": "♻️ Qaytarilgan (bo'sh): {n}",
     },
     "bs_in_hand": {
-        "ru": "Сейчас на руках:     {n}",
-        "uz": "Hozir qo'lida:       {n}",
+        "ru": "📦 На руках у клиента: {n}",
+        "uz": "📦 Mijozda qo'lida:    {n}",
     },
     "bs_pending": {
-        "ru": "Ожидание:            {n}",
-        "uz": "Kutmoqda:            {n}",
+        "ru": "⏳ В ожидании:         {n}",
+        "uz": "⏳ Kutmoqda:            {n}",
+    },
+    "bs_last_delivery": {
+        "ru": "📅 Последняя доставка: {date}",
+        "uz": "📅 Oxirgi yetkazma:    {date}",
+    },
+    "bs_never_delivered": {
+        "ru": "📅 Последняя доставка: ещё не было",
+        "uz": "📅 Oxirgi yetkazma:    hali bo'lmagan",
     },
 
     # ===== Admin: Pending (extra) =====
@@ -519,8 +527,8 @@ TRANSLATIONS = {
         "uz": "Izoh: {notes}",
     },
     "claimed_order_full": {
-        "ru": "Вы взяли заказ #{id}!\n\nЗаказ #{id}\nКлиент: {name}\nТелефон: {phone}\nАдрес: {address}\nБутылки: {bottles}",
-        "uz": "#{id}-buyurtma qabul qilindi!\n\nBuyurtma #{id}\nMijoz: {name}\nTelefon: {phone}\nManzil: {address}\nShishalar: {bottles}",
+        "ru": "Вы взяли заказ #{id}!\n\nЗаказ #{id}\nКлиент: {name}\nТелефон: {phone}\nАдрес: {address}\nБутылки: {bottles}\n♻️ У клиента на руках: {in_hand} бут.",
+        "uz": "#{id}-buyurtma qabul qilindi!\n\nBuyurtma #{id}\nMijoz: {name}\nTelefon: {phone}\nManzil: {address}\nShishalar: {bottles}\n♻️ Mijozda qo'lida: {in_hand} shisha",
     },
     "notif_order_accepted": {
         "ru": "Ваш заказ #{id} принят водителем и уже в пути!",
@@ -829,13 +837,19 @@ def get_status_label(status: str, lang: str) -> str:
 
 def format_bottle_stats_i18n(stats: dict, lang: str) -> str:
     """Format bottle stats in the user's language."""
-    return "\n".join([
+    lines = [
         t("bs_total_ordered", lang, n=stats["total_ordered"]),
         t("bs_total_delivered", lang, n=stats["total_delivered"]),
         t("bs_returned", lang, n=stats["total_returned"]),
         t("bs_in_hand", lang, n=stats["bottles_in_hand"]),
         t("bs_pending", lang, n=stats["pending_bottles"]),
-    ])
+    ]
+    last_date = stats.get("last_delivery_date")
+    if last_date:
+        lines.append(t("bs_last_delivery", lang, date=last_date.strftime("%d.%m.%Y")))
+    else:
+        lines.append(t("bs_never_delivered", lang))
+    return "\n".join(lines)
 
 
 def format_order_short_i18n(data: dict, lang: str) -> str:

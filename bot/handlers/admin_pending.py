@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from app.database import get_session
-from app.services import order_service
+from app.services import bottle_service, order_service
 from bot.keyboards.admin_kb import pending_orders_keyboard
 from bot.middlewares.auth import require_admin
 from bot.utils.i18n import get_lang, t
@@ -154,10 +154,13 @@ async def claim_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         detail = _extract_order_detail(order)
+        cust_bottles = bottle_service.get_customer_bottles(session, detail["customer_id"])
+        detail["bottles_in_hand"] = cust_bottles["bottles_in_hand"]
 
     text = t("claimed_order_full", lang, id=order_id,
              name=detail["customer_name"], phone=detail["customer_phone"],
-             address=detail["delivery_address"], bottles=detail["bottle_count"])
+             address=detail["delivery_address"], bottles=detail["bottle_count"],
+             in_hand=detail["bottles_in_hand"])
     if detail.get("delivery_notes"):
         text += t("claimed_notes", lang, notes=detail["delivery_notes"])
     await query.edit_message_text(text=text)

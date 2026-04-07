@@ -182,7 +182,9 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
             # Re-fetch with relationships for notification dict
             from app.models.order import Order
+            from app.services import bottle_service
             order = session.get(Order, order_id)
+            cust_bottles = bottle_service.get_customer_bottles(session, customer_id)
             order_data = {
                 "id": order.id,
                 "customer_name": order.customer.full_name,
@@ -191,6 +193,7 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
                 "delivery_address": order.delivery_address,
                 "delivery_notes": order.delivery_notes,
                 "version": order.version,
+                "bottles_in_hand": cust_bottles["bottles_in_hand"],
             }
 
         await query.edit_message_text(

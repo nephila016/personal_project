@@ -29,6 +29,8 @@ def index():
     orders_by_status = stats_service.get_orders_by_status(db.session)
     orders_by_day = stats_service.get_orders_by_day(db.session, days=30)
     recent_activity = stats_service.get_recent_activity(db.session, limit=10)
+    drivers_summary = bottle_service.get_all_drivers_stock_summary(db.session)
+    customers_with_bottles = bottle_service.get_all_customers_bottle_summary(db.session)
 
     return render_template(
         "dashboard.html",
@@ -36,6 +38,8 @@ def index():
         orders_by_status=orders_by_status,
         orders_by_day=orders_by_day,
         recent_activity=recent_activity,
+        drivers_summary=drivers_summary,
+        customers_with_bottles=customers_with_bottles,
     )
 
 
