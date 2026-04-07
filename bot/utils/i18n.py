@@ -540,6 +540,22 @@ TRANSLATIONS = {
         "ru": "Заказ #{id} доставлен!\nОстаток на складе: {stock} бутылок.",
         "uz": "#{id}-buyurtma yetkazildi!\nOmborda qoldiq: {stock} shisha.",
     },
+    "ask_empty_bottles": {
+        "ru": "✅ Заказ #{id} доставлен!\n\nСколько пустых бутылок забрали у клиента?\n(Введите число или 0, если не забирали)",
+        "uz": "✅ #{id}-buyurtma yetkazildi!\n\nMijozdan necha bo'sh shisha oldingiz?\n(Son kiriting yoki 0 — olmagan bo'lsangiz)",
+    },
+    "invalid_empty_count": {
+        "ru": "Введите число от 0 до {max}:",
+        "uz": "0 dan {max} gacha son kiriting:",
+    },
+    "delivery_complete_with_return": {
+        "ru": "Готово! Заказ #{id} доставлен.\n📦 Доставлено: {delivered} бутылок\n♻️ Забрано пустых: {returned}\n📊 Ваш остаток: {stock} бутылок",
+        "uz": "Tayyor! #{id}-buyurtma yetkazildi.\n📦 Yetkazildi: {delivered} shisha\n♻️ Bo'sh olingan: {returned}\n📊 Qoldig'ingiz: {stock} shisha",
+    },
+    "delivery_complete_no_return": {
+        "ru": "Готово! Заказ #{id} доставлен.\n📦 Доставлено: {delivered} бутылок\n📊 Ваш остаток: {stock} бутылок",
+        "uz": "Tayyor! #{id}-buyurtma yetkazildi.\n📦 Yetkazildi: {delivered} shisha\n📊 Qoldig'ingiz: {stock} shisha",
+    },
     "notif_order_delivered_customer": {
         "ru": "Ваш заказ #{id} ({bottles} бутылок) доставлен!",
         "uz": "#{id}-buyurtmangiz ({bottles} shisha) yetkazib berildi!",
